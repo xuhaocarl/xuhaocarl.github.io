@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心情香氛</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Icon图标库 (用于收藏、分享等) -->
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    
+    <style>
+        /* ... (样式与之前相同) ... */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #FFFBF5;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- 主容器 (移动优先, 最大宽度) -->
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden" style="box-shadow: 0 20px 60px -10px rgba(139, 92, 246, 0.2);">
+        
+        <!-- 1. 心情选择区域 -->
+        <header class="p-6">
+            <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">你现在的心情是？</h1>
+            <!-- 更新为 3x2 布局 -->
+            <div class="grid grid-cols-3 gap-4 justify-items-center">
+                <!-- 心情按钮 -->
+                <button class="mood-btn p-4 rounded-full transition-all duration-300 focus:outline-none" data-mood="happy">
+                    <span class="text-3xl">😄</span>
+                </button>
+                <button class="mood-btn p-4 rounded-full transition-all duration-300 focus:outline-none" data-mood="relaxed">
+                    <span class="text-3xl">😌</span>
+                </button>
+                <button class="mood-btn p-4 rounded-full transition-all duration-300 focus:outline-none" data-mood="focused">
+                    <span class="text-3xl">🧑‍💻</span>
+                </button>
+                <button class="mood-btn p-4 rounded-full transition-all duration-300 focus:outline-none" data-mood="sleepy">
+                    <span class="text-3xl">😴</span>
+                </button>
+                <!-- 新增心情 -->
+                <button class="mood-btn p-4 rounded-full transition-all duration-300 focus:outline-none" data-mood="dejected">
+                    <span class="text-3xl">😞</span>
+                </button>
+                <button class="mood-btn p-4 rounded-full transition-all duration-300 focus:outline-none" data-mood="angry">
+                    <span class="text-3xl">😠</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- 1.5. 场景选择区域 (默认隐藏) -->
+        <section id="scene-selection" class="p-6 border-t border-gray-100 hidden fade-in">
+            <h2 class="text-xl font-bold text-gray-800 text-center mb-5">在什么场景下？</h2>
+            <div class="flex justify-around">
+                <button class="scene-btn p-3 rounded-full transition-all duration-300 focus:outline-none text-center" data-scene="home">
+                    <span class="text-3xl">🏠</span>
+                    <span class="block text-xs mt-1">居家</span>
+                </button>
+                <button class="scene-btn p-3 rounded-full transition-all duration-300 focus:outline-none text-center" data-scene="work">
+                    <span class="text-3xl">💼</span>
+                    <span class="block text-xs mt-1">办公</span>
+                </button>
+                <button class="scene-btn p-3 rounded-full transition-all duration-300 focus:outline-none text-center" data-scene="social">
+                    <span class="text-3xl">🚶‍♀️</span>
+                    <span class="block text-xs mt-1">外出</span>
+                </button>
+            </div>
+        </section>
+
+
+        <!-- 2. 香味展示卡片 (动态内容) -->
+        <main id="fragrance-display" class="px-6 py-4 min-h-[300px]">
+            <!-- 初始提示 -->
+            <div id="initial-prompt" class="flex items-center justify-center h-full text-gray-400">
+                <p>请选择一个心情来发现香氛</p>
+            </div>
+            
+            <!-- 香味卡片 (默认隐藏) -->
+            <div id="scent-card" class="hidden fade-in">
+                <!-- 颜色块/图片区 -->
+                <div id="scent-color-block" class="h-32 rounded-2xl mb-4 transition-colors duration-500 flex items-center justify-center text-white text-lg font-bold">
+                    <!-- 图片占位符, 也可以用背景图 -->
+                </div>
+                
+                <!-- 详情 -->
+                <div class="flex justify-between items-start mb-2">
+                    <h2 id="scent-name" class="text-3xl font-bold text-gray-900"></h2>
+                    <!-- 收藏按钮 -->
+                    <button id="favorite-btn" class="p-2 rounded-full text-gray-400 hover:text-red-500 transition-colors">
+                        <ion-icon name="heart-outline" class="text-3xl"></ion-icon>
+                    </button>
+                </div>
+                <p id="scent-description" class="text-gray-600 mb-4"></p>
+                
+                <!-- 切换按钮 -->
+                <button id="random-btn" class="w-full py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors">
+                    换一个推荐
+                </button>
+
+                <!-- 无推荐时的提示 -->
+                <div id="no-recommendation" class="hidden text-center text-gray-500 py-10">
+                    <p>抱歉，在该场景下暂时没有合适的推荐。</p>
+                    <p class="text-sm">试试其他场景吧！</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 3. 控制区域 (番茄时钟) -->
+        <section id="controls" class="px-6 py-5 bg-gray-50 border-t border-gray-100 hidden">
+            <!-- ... (番茄时钟代码与之前相同) ... -->
+            <div class="w-full">
+                <label class="block text-sm font-medium text-gray-700 mb-3 text-center">番茄时钟</label>
+                <div class="flex justify-center space-x-2 mb-3">
+                    <button id="pomo-mode-focus" class="pomodoro-mode-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-indigo-500 text-white" data-time="25">
+                        专注 (25m)
+                    </button>
+                    <button id="pomo-mode-break" class="pomodoro-mode-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-700" data-time="5">
+                        休息 (5m)
+                    </button>
+                </div>
+                <div id="pomodoro-timer" class="text-5xl font-bold text-center text-indigo-600 my-4 tracking-wider">
+                    25:00
+                </div>
+                <div class="flex justify-center space-x-3">
+                    <button id="pomodoro-start" class="px-6 py-2 bg-indigo-500 text-white rounded-lg shadow hover:bg-indigo-600 transition-colors font-semibold">
+                        开始专注
+                    </button>
+                    <button id="pomodoro-pause" class="px-6 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600 transition-colors font-semibold hidden">
+                        暂停
+                    </button>
+                    <button id="pomodoro-reset" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-semibold">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 使用建议区域 (默认隐藏) -->
+        <section id="usage-tips" class="px-6 py-5 bg-indigo-50 border-t border-indigo-100 hidden">
+            
+            <!-- 新增：颜色搭配 -->
+            <div id="color-recommendation-box" class="mb-4 p-3 rounded-lg flex items-center transition-colors duration-300">
+                <div id="color-recommendation-swatch" class="w-10 h-10 rounded-full mr-3 border border-gray-200 shadow-sm"></div>
+                <div>
+                    <h4 class="font-semibold text-indigo-800">今日转运色</h4>
+                    <p id="color-recommendation-name" class="text-sm text-indigo-700 font-medium"></p>
+                </div>
+            </div>
+            <p id="color-recommendation-desc" class="text-sm text-indigo-700 mb-4"></p>
+
+            <!-- 原有内容 -->
+            <div class="mb-3">
+                <h4 class="font-semibold text-indigo-800">使用场景</h4>
+                <p id="scent-scene" class="text-sm text-indigo-700"></p>
+            </div>
+            <div class="mb-3">
+                <h4 class="font-semibold text-indigo-800">推荐配方 (Top Notes)</h4>
+                <p id="scent-recipe" class="text-sm text-indigo-700"></p>
+            </div>
+            <div class="mb-3">
+                <h4 class="font-semibold text-indigo-800">音乐搭配</h4>
+                <p id="scent-music" class="text-sm text-indigo-700"></p>
+            </div>
+            <div>
+                <h4 class="font-semibold text-indigo-800">冥想建议</h4>
+                <p id="scent-meditation" class="text-sm text-indigo-700"></p>
+            </div>
+        </section>
+
+
+        <!-- 5. 底部导航 (分享与收藏列表) -->
+        <footer class="flex justify-around p-4 border-t border-gray-200 bg-white">
+             <!-- ... (底部导航与之前相同) ... -->
+            <button id="share-btn" class="flex flex-col items-center text-gray-600 hover:text-indigo-500 transition-colors">
+                <ion-icon name="share-social-outline" class="text-2xl"></ion-icon>
+                <span class="text-xs">分享</span>
+            </button>
+            <button id="show-favorites-btn" class="flex flex-col items-center text-gray-600 hover:text-indigo-500 transition-colors">
+                <ion-icon name="bookmark-outline" class="text-2xl"></ion-icon>
+                <span class="text-xs">我的收藏</span>
+            </button>
+        </footer>
+    </div>
+
+
+    <!-- 弹窗：通用提醒 -->
+    <div id="alert-modal" class="fixed inset-0 z-50 modal-backdrop items-center justify-center p-4 hidden">
+        <!-- ... (弹窗与之前相同) ... -->
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center">
+            <h3 id="alert-modal-title" class="text-xl font-bold mb-4">时间到！</h3>
+            <p id="alert-modal-message" class="text-gray-600 mb-6">您的香氛时间已结束。</p>
+            <button id="close-alert-modal" class="w-full py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
+                关闭
+            </button>
+        </div>
+    </div>
+
+    <!-- 弹窗：我的收藏 -->
+    <div id="favorites-modal" class="fixed inset-0 z-50 modal-backdrop items-center justify-center p-4 hidden">
+        <!-- ... (弹窗与之前相同) ... -->
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">我的收藏</h3>
+                <button id="close-favorites-modal" class="text-gray-400 hover:text-gray-600">
+                    <ion-icon name="close-outline" class="text-2xl"></ion-icon>
+                </button>
+            </div>
+            <div id="favorites-list" class="overflow-y-auto space-y-3">
+                <!-- 收藏内容将动态插入这里 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. 静态数据 (重构) ---
+            const scentData = {
+                "happy": {
+                    "color_recommendation": {
+                        "name": "活力黄",
+                        "hex": "#FDE047", // yellow-400
+                        "description": "明亮的黄色能激发愉悦感。试试黄色的便签、杯子或一件T恤。"
+                    },
+                    "scents": [
+                        { "name": "阳光甜橙", "short_description": "明亮、愉悦的柑橘香调。", "top_notes": "甜橙, 佛手柑", "recipe": "甜橙3滴 + 佛手柑2滴", "color_hex": "#FDBA74", "music_tag": "轻快流行乐", "scene": "早晨起床提神，或朋友聚会。", "meditation": "想象温暖的阳光洒满全身。", "scene_tags": ["home", "social"] },
+                        { "name": "葡萄柚活力", "short_description": "清新微苦的果香，振奋精神。", "top_notes": "葡萄柚, 杜松子", "recipe": "葡萄柚4滴 + 杜松子1滴", "color_hex": "#F87171", "music_tag": "独立摇滚", "scene": "感到疲倦或缺乏动力时使用。", "meditation": "专注于香气中的微苦与清新。", "scene_tags": ["home", "work"] },
+                        { "name": "茉莉欣喜", "short_description": "甜美的花香，带来幸福感。", "top_notes": "茉莉, 依兰", "recipe": "茉莉1滴 + 依兰2滴", "color_hex": "#FBCFE8", "music_tag": "浪漫弦乐", "scene": "特殊场合、约会前。", "meditation": "想象自己如茉莉花瓣般绽放。", "scene_tags": ["social"] }
+                    ]
+                },
+                "relaxed": {
+                    "color_recommendation": {
+                        "name": "治愈绿",
+                        "hex": "#86EFAC", // green-300
+                        "description": "自然的绿色帮助身心放松。在桌上放一盆小植物，或看看窗外的树。"
+                    },
+                    "scents": [
+                        { "name": "薰衣草舒缓调", "short_description": "经典的花草香，带来深度放松。", "top_notes": "高地薰衣草, 罗马洋甘菊", "recipe": "薰衣草3滴 + 罗洋1滴", "color_hex": "#C4B5FD", "music_tag": "轻音乐", "scene": "睡前阅读、泡澡或冥想时。", "meditation": "想象自己躺在紫色的薰衣草花海。", "scene_tags": ["home"] },
+                        { "name": "乳香宁静", "short_description": "温暖、深沉的树脂香气。", "top_notes": "乳香, 快乐鼠尾草", "recipe": "乳香2滴 + 快乐鼠尾草2滴", "color_hex": "#FDE68A", "music_tag": "冥想颂钵", "scene": "瑜伽练习或需要从繁忙中抽离时。", "meditation": "跟随香气进行深长的腹式呼吸。", "scene_tags": ["home", "work"] },
+                        { "name": "佛手柑悠然", "short_description": "带有花香的柑橘调，放松情绪。", "top_notes": "佛手柑, 橙花", "recipe": "佛手柑3滴 + 橙花1滴", "color_hex": "#BEF264", "music_tag": "Lofi Chillhop", "scene": "下午茶时间，或感觉情绪紧绷时。", "meditation": "接纳自己情绪的流动。", "scene_tags": ["home", "social"] }
+                    ]
+                },
+                "focused": {
+                    "color_recommendation": {
+                        "name": "专注蓝",
+                        "hex": "#93C5FD", // blue-300
+                        "description": "冷静的蓝色有助于集中注意力。使用蓝色的笔或笔记本背景。"
+                    },
+                    "scents": [
+                        { "name": "迷迭香薄荷", "short_description": "清凉、穿透力强的草本香气。", "top_notes": "迷迭香, 欧薄荷", "recipe": "迷迭香2滴 + 欧薄荷1滴", "color_hex": "#A5F3FC", "music_tag": "古典钢琴", "scene": "长时间工作、学习时。", "meditation": "想象清凉的香气穿透迷雾。", "scene_tags": ["work"] },
+                        { "name": "雪松专注", "short_description": "沉稳的木质香，带来安定的力量。", "top_notes": "大西洋雪松, 丝柏", "recipe": "雪松3滴 + 丝柏2滴", "color_hex": "#A8A29E", "music_tag": "Lofi Hip Hop", "scene": "处理复杂任务或需要创意写作时。", "meditation": "想象自己扎根于大地。", "scene_tags": ["work", "home"] },
+                        { "name": "柠檬思考", "short_description": "清新的柠檬香气，激活逻辑思维。", "top_notes": "柠檬, 罗勒", "recipe": "柠檬3滴 + 罗勒1滴", "color_hex": "#FEF08A", "music_tag": "巴洛克音乐", "scene": "头脑风暴、解题时。", "meditation": "吸气时，感受清明。", "scene_tags": ["work"] }
+                    ]
+                },
+                "sleepy": {
+                    "color_recommendation": {
+                        "name": "静谧紫",
+                        "hex": "#C4B5FD", // violet-300
+                        "description": "柔和的紫色与靛蓝色有助于平静。换上紫色的床单或睡衣。"
+                    },
+                    "scents": [
+                        { "name": "静谧之夜", "short_description": "洋甘菊与檀香的结合，温柔助眠。", "top_notes": "罗洋, 檀香, 薰衣草", "recipe": "罗洋1滴 + 檀香2滴 + 薰衣草2滴", "color_hex": "#A5B4FC", "music_tag": "摇篮曲", "scene": "睡前半小时使用。", "meditation": "想象身体逐一放松、沉入床垫。", "scene_tags": ["home"] },
+                        { "name": "马郁兰甜梦", "short_description": "温暖的草本香气，安抚思虑。", "top_notes": "甜马郁兰, 佛手柑", "recipe": "甜马郁兰3滴 + 佛手柑1滴", "color_hex": "#FCA5A5", "music_tag": "舒缓爵士", "scene": "因压力或焦虑难以入睡时。", "meditation": "感受温暖的香气包裹着你。", "scene_tags": ["home"] }
+                    ]
+                },
+                "dejected": {
+                    "color_recommendation": {
+                        "name": "希望橙",
+                        "hex": "#FDBA74", // orange-300
+                        "description": "温暖的橙色能带来安慰和积极感。点一个橙色的蜡烛或穿上橙色袜子。"
+                    },
+                    "scents": [
+                        { "name": "佛手柑慰藉", "short_description": "抗抑郁的首选，带来阳光感。", "top_notes": "佛手柑, 甜橙", "recipe": "佛手柑3滴 + 甜橙2滴", "color_hex": "#BEF264", "music_tag": "轻柔民谣", "scene": "情绪低落，提不起劲时。", "meditation": "想象一缕阳光照进心中。", "scene_tags": ["home", "social"] },
+                        { "name": "乳香守护", "short_description": "深沉的香气，带来被保护的安全感。", "top_notes": "乳香, 真正薰衣草", "recipe": "乳香2滴 + 薰衣草2滴", "color_hex": "#FDE68A", "music_tag": "圣咏", "scene": "感觉孤独或需要支持时。", "meditation": "感受自己被一个温暖的光罩包裹。", "scene_tags": ["home", "work"] }
+                    ]
+                },
+                "angry": {
+                    "color_recommendation": {
+                        "name": "平和粉",
+                        "hex": "#FBCFE8", // pink-200
+                        "description": "柔和的粉色有助于熄灭怒火，带来温柔。使用粉色的杯垫或毛巾。"
+                    },
+                    "scents": [
+                        { "name": "依兰降火", "short_description": "强效的镇静花香，迅速缓解愤怒。", "top_notes": "依兰, 佛手柑", "recipe": "依兰1滴 + 佛手柑3滴", "color_hex": "#FBCFE8", "music_tag": "舒缓海浪声", "scene": "感到烦躁、即将发火时。", "meditation": "深呼吸，想象怒火随呼气排出。", "scene_tags": ["home", "work"] },
+                        { "name": "岩兰草扎根", "short_description": "深沉的泥土气息，让思绪平稳落地。", "top_notes": "岩兰草, 雪松", "recipe": "岩兰草1滴 + 雪松2滴", "color_hex": "#A1A1AA", "music_tag": "大地鼓乐", "scene": "怒火过后，感到心神不宁时。", "meditation": "想象双脚深深扎根于土地。", "scene_tags": ["home", "work"] }
+                    ]
+                }
+            };
+
+
+            // --- 2. 状态变量 ---
+            let currentMood = null;
+            let currentScene = null; // 新增
+            let currentScent = null;
+            let favorites = [];
+            
+            // (番茄时钟状态变量)
+            let pomoTimerId = null;
+            let pomoSecondsRemaining = 25 * 60;
+            let pomoIsRunning = false;
+            let pomoCurrentMode = 25; 
+            let lastTickTime = 0;
+
+            // --- 3. DOM 元素引用 ---
+            const moodButtons = document.querySelectorAll('.mood-btn');
+            
+            // (场景)
+            const sceneSelectionSection = document.getElementById('scene-selection');
+            const sceneButtons = document.querySelectorAll('.scene-btn');
+            
+            const display = document.getElementById('fragrance-display');
+            const initialPrompt = document.getElementById('initial-prompt');
+            const scentCard = document.getElementById('scent-card');
+            const colorBlock = document.getElementById('scent-color-block');
+            const scentName = document.getElementById('scent-name');
+            const scentDescription = document.getElementById('scent-description');
+            const favoriteBtn = document.getElementById('favorite-btn');
+            const randomBtn = document.getElementById('random-btn');
+            const noRecommendation = document.getElementById('no-recommendation');
+            
+            const controlsSection = document.getElementById('controls');
+            // (番茄时钟 DOM)
+            const pomoTimerDisplay = document.getElementById('pomodoro-timer');
+            const pomoStartBtn = document.getElementById('pomodoro-start');
+            const pomoPauseBtn = document.getElementById('pomodoro-pause');
+            const pomoResetBtn = document.getElementById('pomodoro-reset');
+            const pomoModeFocusBtn = document.getElementById('pomo-mode-focus');
+            const pomoModeBreakBtn = document.getElementById('pomo-mode-break');
+            
+            const usageTipsSection = document.getElementById('usage-tips');
+            // (颜色搭配 DOM)
+            const colorBox = document.getElementById('color-recommendation-box');
+            const colorSwatch = document.getElementById('color-recommendation-swatch');
+            const colorName = document.getElementById('color-recommendation-name');
+            const colorDesc = document.getElementById('color-recommendation-desc');
+            // (其他建议 DOM)
+            const scentScene = document.getElementById('scent-scene');
+            const scentRecipe = document.getElementById('scent-recipe');
+            const scentMusic = document.getElementById('scent-music');
+            const scentMeditation = document.getElementById('scent-meditation');
+
+            const shareBtn = document.getElementById('share-btn');
+            const showFavoritesBtn = document.getElementById('show-favorites-btn');
+            
+            // (弹窗 DOM)
+            const alertModal = document.getElementById('alert-modal');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const closeAlertModal = document.getElementById('close-alert-modal');
+            const favoritesModal = document.getElementById('favorites-modal');
+            const favoritesList = document.getElementById('favorites-list');
+            const closeFavoritesModal = document.getElementById('close-favorites-modal');
+
+            // --- 4. 核心功能函数 ---
+
+            function init() {
+                loadFavorites();
+                addEventListeners();
+                updatePomodoroDisplay(); 
+            }
+
+            function addEventListeners() {
+                moodButtons.forEach(btn => {
+                    btn.addEventListener('click', () => handleMoodSelect(btn.dataset.mood));
+                });
+
+                // (新增场景监听)
+                sceneButtons.forEach(btn => {
+                    btn.addEventListener('click', () => handleSceneSelect(btn.dataset.scene));
+                });
+
+                randomBtn.addEventListener('click', () => displayRecommendation(true));
+                favoriteBtn.addEventListener('click', toggleFavorite);
+                
+                // (番茄时钟监听)
+                pomoStartBtn.addEventListener('click', startPomodoro);
+                pomoPauseBtn.addEventListener('click', pausePomodoro);
+                pomoResetBtn.addEventListener('click', resetPomodoro);
+                pomoModeFocusBtn.addEventListener('click', () => selectPomodoroMode(25));
+                pomoModeBreakBtn.addEventListener('click', () => selectPomodoroMode(5));
+                
+                shareBtn.addEventListener('click', shareScent);
+                showFavoritesBtn.addEventListener('click', showFavoritesModal);
+                
+                closeAlertModal.addEventListener('click', () => alertModal.classList.add('hidden'));
+                closeFavoritesModal.addEventListener('click', () => favoritesModal.classList.add('hidden'));
+            }
+
+            /**
+             * 步骤 1: 处理心情选择
+             */
+            function handleMoodSelect(mood) {
+                currentMood = mood;
+                currentScene = null; // 重置场景
+                
+                // 更新心情按钮激活状态
+                moodButtons.forEach(btn => {
+                    btn.classList.remove('bg-indigo-100', 'scale-110');
+                    if (btn.dataset.mood === mood) {
+                        btn.classList.add('bg-indigo-100', 'scale-110');
+                    }
+                });
+
+                // 重置场景按钮状态
+                sceneButtons.forEach(btn => {
+                    btn.classList.remove('bg-indigo-100', 'scale-110');
+                });
+                
+                // 显示场景选择器
+                sceneSelectionSection.classList.remove('hidden');
+
+                // 隐藏旧的推荐
+                scentCard.classList.add('hidden');
+                controlsSection.classList.add('hidden');
+                usageTipsSection.classList.add('hidden');
+                
+                // 更新提示
+                initialPrompt.classList.remove('hidden');
+                initialPrompt.textContent = "请选择一个场景";
+            }
+
+            /**
+             * 步骤 2: 处理场景选择
+             */
+            function handleSceneSelect(scene) {
+                currentScene = scene;
+
+                // 更新场景按钮激活状态
+                sceneButtons.forEach(btn => {
+                    btn.classList.remove('bg-indigo-100', 'scale-110');
+                    if (btn.dataset.scene === scene) {
+                        btn.classList.add('bg-indigo-100', 'scale-110');
+                    }
+                });
+
+                // 显示第一个推荐
+                displayRecommendation(false);
+            }
+
+
+            /**
+             * 步骤 3: 显示推荐 (基于心情 + 场景)
+             * @param {boolean} isRandom - 是否随机选择
+             */
+            function displayRecommendation(isRandom = false) {
+                if (!currentMood || !currentScene) return;
+
+                const moodData = scentData[currentMood];
+                const availableScents = moodData.scents.filter(s => s.scene_tags.includes(currentScene));
+
+                // 隐藏初始提示, 显示卡片
+                initialPrompt.classList.add('hidden');
+                scentCard.classList.remove('hidden');
+                scentCard.classList.remove('fade-in'); 
+                void scentCard.offsetWidth; 
+                scentCard.classList.add('fade-in'); 
+
+                if (availableScents.length === 0) {
+                    // 没有匹配的香氛
+                    noRecommendation.classList.remove('hidden');
+                    // 隐藏香氛详情和控制
+                    document.getElementById('scent-color-block').classList.add('hidden');
+                    document.getElementById('scent-name').classList.add('hidden');
+                    document.getElementById('scent-description').classList.add('hidden');
+                    document.getElementById('favorite-btn').classList.add('hidden');
+                    document.getElementById('random-btn').classList.add('hidden');
+                    controlsSection.classList.add('hidden');
+                    usageTipsSection.classList.add('hidden');
+                    currentScent = null;
+                    return;
+                }
+                
+                // 恢复显示
+                noRecommendation.classList.add('hidden');
+                document.getElementById('scent-color-block').classList.remove('hidden');
+                document.getElementById('scent-name').classList.remove('hidden');
+                document.getElementById('scent-description').classList.remove('hidden');
+                document.getElementById('favorite-btn').classList.remove('hidden');
+                document.getElementById('random-btn').classList.remove('hidden');
+
+                // 选择香氛
+                let scent;
+                if (isRandom) {
+                    const otherScents = availableScents.filter(s => s.name !== currentScent?.name);
+                    if (otherScents.length > 0) {
+                        scent = otherScents[Math.floor(Math.random() * otherScents.length)];
+                    } else {
+                        scent = availableScents[0];
+                    }
+                } else {
+                    scent = availableScents[0];
+                }
+                
+                currentScent = scent;
+
+                // 1. 更新香氛卡片
+                colorBlock.style.backgroundColor = scent.color_hex;
+                colorBlock.textContent = scent.top_notes; 
+                scentName.textContent = scent.name;
+                scentDescription.textContent = scent.short_description;
+                updateFavoriteButtonState();
+
+                // 2. 更新颜色建议
+                const color = moodData.color_recommendation;
+                colorSwatch.style.backgroundColor = color.hex;
+                colorName.textContent = color.name;
+                colorDesc.textContent = color.description;
+                // 使用 Tailwind 的透明度简写 (例如 #FDE047 + 20% 透明度)
+                // 注意: style 属性不支持 Tailwind 的 /opacity, 必须用 RGBA 或 8位Hex
+                // 为了简单起见，我们用一个固定的浅色背景
+                colorBox.style.backgroundColor = `${color.hex}33`; // 增加背景色
+                
+                // 3. 更新使用建议
+                scentScene.textContent = scent.scene;
+                scentRecipe.textContent = scent.recipe;
+                scentMusic.textContent = scent.music_tag;
+                scentMeditation.textContent = scent.meditation;
+                
+                // 4. 显示控制和建议区域
+                controlsSection.classList.remove('hidden');
+                usageTipsSection.classList.remove('hidden');
+            }
+
+
+            // --- 5. 番茄时钟功能 (与之前相同) ---
+            
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function updatePomodoroDisplay() {
+                pomoTimerDisplay.textContent = formatTime(pomoSecondsRemaining);
+            }
+
+            function selectPomodoroMode(minutes) {
+                pausePomodoro(); 
+                pomoCurrentMode = minutes;
+                pomoSecondsRemaining = minutes * 60;
+                updatePomodoroDisplay();
+
+                if (minutes === 25) {
+                    pomoModeFocusBtn.classList.add('bg-indigo-500', 'text-white');
+                    pomoModeFocusBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                    pomoModeBreakBtn.classList.add('bg-gray-200', 'text-gray-700');
+                    pomoModeBreakBtn.classList.remove('bg-indigo-500', 'text-white');
+                    pomoStartBtn.textContent = "开始专注";
+                } else {
+                    pomoModeBreakBtn.classList.add('bg-indigo-500', 'text-white');
+                    pomoModeBreakBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                    pomoModeFocusBtn.classList.add('bg-gray-200', 'text-gray-700');
+                    pomoModeFocusBtn.classList.remove('bg-indigo-500', 'text-white');
+                    pomoStartBtn.textContent = "开始休息";
+                }
+            }
+
+            function startPomodoro() {
+                pomoIsRunning = true;
+                pomoStartBtn.classList.add('hidden');
+                pomoPauseBtn.classList.remove('hidden');
+                lastTickTime = Date.now();
+                pomoTimerId = setInterval(tick, 1000);
+            }
+
+            function pausePomodoro() {
+                pomoIsRunning = false;
+                pomoStartBtn.classList.remove('hidden');
+                pomoPauseBtn.classList.add('hidden');
+                if (pomoTimerId) {
+                    clearInterval(pomoTimerId);
+                    pomoTimerId = null;
+                }
+            }
+            
+            function resetPomodoro() {
+                pausePomodoro();
+                pomoSecondsRemaining = pomoCurrentMode * 60;
+                updatePomodoroDisplay();
+                pomoStartBtn.textContent = (pomoCurrentMode === 25) ? "开始专注" : "开始休息";
+            }
+
+            function tick() {
+                const now = Date.now();
+                const elapsed = Math.round((now - lastTickTime) / 1000);
+                lastTickTime = now;
+                
+                pomoSecondsRemaining -= elapsed;
+                
+                if (pomoSecondsRemaining <= 0) {
+                    pomoSecondsRemaining = 0;
+                    updatePomodoroDisplay();
+                    pausePomodoro();
+                    if (pomoCurrentMode === 25) {
+                        showAppAlert("时间到！", "专注时间已结束，休息5分钟吧！");
+                        selectPomodoroMode(5);
+                    } else {
+                        showAppAlert("时间到！", "休息已结束，开始新的专注吧！");
+                        selectPomodoroMode(25);
+                    }
+                } else {
+                    updatePomodoroDisplay();
+                }
+            }
+            
+            function showAppAlert(title, message) {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
+                alertModal.classList.remove('hidden');
+                alertModal.classList.add('flex');
+            }
+
+
+            // --- 6. 收藏夹 (与之前相同) ---
+
+            function loadFavorites() {
+                favorites = JSON.parse(localStorage.getItem('moodScentFavorites')) || [];
+            }
+
+            function saveFavorites() {
+                localStorage.setItem('moodScentFavorites', JSON.stringify(favorites));
+            }
+
+            function toggleFavorite() {
+                if (!currentScent) return;
+                const index = favorites.findIndex(fav => fav.name === currentScent.name);
+                if (index > -1) {
+                    favorites.splice(index, 1);
+                } else {
+                    favorites.push(currentScent);
+                }
+                saveFavorites();
+                updateFavoriteButtonState();
+            }
+
+            function updateFavoriteButtonState() {
+                if (!currentScent) return;
+                const isFavorited = favorites.some(fav => fav.name === currentScent.name);
+                const icon = favoriteBtn.querySelector('ion-icon');
+                if (isFavorited) {
+                    icon.setAttribute('name', 'heart');
+                    favoriteBtn.classList.add('text-red-500');
+                    icon.classList.add('scale-110');
+                } else {
+                    icon.setAttribute('name', 'heart-outline');
+                    favoriteBtn.classList.remove('text-red-500');
+                    icon.classList.remove('scale-110');
+                }
+            }
+
+            function showFavoritesModal() {
+                favoritesList.innerHTML = ''; 
+                if (favorites.length === 0) {
+                    favoritesList.innerHTML = '<p class="text-gray-500 text-center">暂无收藏</p>';
+                } else {
+                    favorites.forEach(scent => {
+                        const item = document.createElement('div');
+                        item.className = 'flex items-center p-3 bg-gray-50 rounded-lg';
+                        item.innerHTML = `
+                            <div class="w-10 h-10 rounded-full mr-3" style="background-color: ${scent.color_hex};"></div>
+                            <div>
+                                <p class="font-semibold text-gray-800">${scent.name}</p>
+                                <p class="text-sm text-gray-500">${scent.short_description}</p>
+                            </div>
+                        `;
+                        favoritesList.appendChild(item);
+                    });
+                }
+                favoritesModal.classList.remove('hidden');
+                favoritesModal.classList.add('flex');
+            }
+
+            // --- 7. 分享功能 (更新分享文案) ---
+
+            async function shareScent() {
+                if (!currentScent) {
+                    showAppAlert("分享失败", "请先选择一款香氛再分享。");
+                    return;
+                }
+
+                // 更新文案
+                const moodText = {
+                    "happy": "开心",
+                    "relaxed": "放松",
+                    "focused": "专注",
+                    "sleepy": "助眠",
+                    "dejected": "沮丧",
+                    "angry": "生气"
+                }[currentMood] || "特别";
+
+                const shareText = `我现在的心情：${moodText} — 我选择了『${currentScent.name}』，${currentScent.scene.split('。')[0]}，完美的时刻。`;
+
+                const shareData = {
+                    title: '我的心情香氛',
+                    text: shareText,
+                    url: window.location.href,
+                };
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                        console.log('分享成功');
+                    } catch (err) {
+                        console.error('分享失败:', err);
+                    }
+                } else {
+                    showAppAlert("分享失败", "您的浏览器不支持分享功能，请手动复制链接。");
+                }
+            }
+
+            // --- 8. 启动应用 ---
+            init();
+        });
+    </script>
+</body>
+</html>
+
